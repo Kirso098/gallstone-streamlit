@@ -8,10 +8,7 @@ from tensorflow.keras.models import load_model
 # ======================================================
 # PAGE CONFIG
 # ======================================================
-st.set_page_config(
-    page_title="Prediksi Gallstone",
-    layout="wide"
-)
+st.set_page_config(page_title="Prediksi Gallstone", layout="wide")
 
 # ======================================================
 # LOAD ARTEFAK INFERENSI
@@ -50,78 +47,116 @@ best_params = load_best_params()
 st.title("Aplikasi Prediksi Gallstone")
 st.markdown(
     """
-    **Sistem SKrinning Berbasis Artificial Neural Network (ANN)**  
+    **Sistem Pendukung Keputusan Berbasis Artificial Neural Network (ANN)**  
 
     - Model menggunakan **30 fitur input**
     - Pengguna **tidak wajib mengisi seluruh fitur**
-    - **Fitur turunan dihitung otomatis**
-    - Fitur yang belum tersedia **diimputasi menggunakan KNN Imputation**
+    - **Fitur turunan & agregat dihitung otomatis**
+    - Nilai kosong **diimputasi menggunakan KNN Imputation**
     """
 )
 
 # ======================================================
-# INPUT DATA PASIEN (FITUR PRIMER)
+# INPUT DATA PASIEN – FITUR PRIMER
 # ======================================================
 st.subheader("Input Data Pasien (Fitur Primer)")
 
 col1, col2, col3 = st.columns(3)
 
 with col1:
-    Age = st.number_input("Age", 0, 120, 45)
-    Gender = st.selectbox("Gender", ["Male", "Female"])
-    Height = st.number_input("Height (cm)", 0.0, 250.0, 165.0)
-    Weight = st.number_input("Weight (kg)", 0.0, 200.0, 70.0)
+    Age = st.number_input("Age", min_value=0, max_value=120, value=None)
+    Gender = st.selectbox("Gender", ["", "Male", "Female"])
+    Height = st.number_input("Height (cm)", min_value=0.0, max_value=250.0, value=None)
+    Weight = st.number_input("Weight (kg)", min_value=0.0, max_value=200.0, value=None)
 
 with col2:
-    Glucose = st.number_input("Glucose", 0.0, 500.0, 100.0)
-    ALT = st.number_input("Alanin Aminotransferaz (ALT)", 0.0, 300.0, 30.0)
-    AST = st.number_input("Aspartat Aminotransferaz (AST)", 0.0, 300.0, 25.0)
-    Creatinine = st.number_input("Creatinine", 0.0, 10.0, 1.0)
-    GFR = st.number_input("Glomerular Filtration Rate (GFR)", 0.0, 200.0, 90.0)
+    Glucose = st.number_input("Glucose", min_value=0.0, max_value=500.0, value=None)
+    ALT = st.number_input("Alanin Aminotransferaz (ALT)", min_value=0.0, max_value=300.0, value=None)
+    AST = st.number_input("Aspartat Aminotransferaz (AST)", min_value=0.0, max_value=300.0, value=None)
+    Creatinine = st.number_input("Creatinine", min_value=0.0, max_value=10.0, value=None)
+    GFR = st.number_input("Glomerular Filtration Rate (GFR)", min_value=0.0, max_value=200.0, value=None)
 
 with col3:
-    HDL = st.number_input("High Density Lipoprotein (HDL)", 0.0, 150.0, 45.0)
-    LDL = st.number_input("Low Density Lipoprotein (LDL)", 0.0, 300.0, 120.0)
-    Triglyceride = st.number_input("Triglyceride", 0.0, 500.0, 150.0)
-    TC = st.number_input("Total Cholesterol (TC)", 0.0, 400.0, 200.0)
-    HGB = st.number_input("Hemoglobin (HGB)", 0.0, 25.0, 14.0)
+    HDL = st.number_input("High Density Lipoprotein (HDL)", min_value=0.0, max_value=150.0, value=None)
+    LDL = st.number_input("Low Density Lipoprotein (LDL)", min_value=0.0, max_value=300.0, value=None)
+    Triglyceride = st.number_input("Triglyceride", min_value=0.0, max_value=500.0, value=None)
+    TC = st.number_input("Total Cholesterol (TC)", min_value=0.0, max_value=400.0, value=None)
+    HGB = st.number_input("Hemoglobin (HGB)", min_value=0.0, max_value=25.0, value=None)
 
 # ======================================================
-# FITUR TURUNAN (AUTO COMPUTE)
+# KOMORBID (CHECKBOX)
 # ======================================================
-st.subheader("Fitur Turunan (Dihitung Otomatis)")
+st.subheader("Komorbiditas")
 
-eps = 1e-6  # untuk menghindari pembagian nol
+c1, c2 = st.columns(2)
+with c1:
+    DM = st.checkbox("Diabetes Mellitus (DM)")
+    CAD = st.checkbox("Coronary Artery Disease (CAD)")
+with c2:
+    Hyperlipidemia = st.checkbox("Hyperlipidemia")
+    Hypothyroidism = st.checkbox("Hypothyroidism")
 
-BMI = Weight / ((Height / 100) ** 2 + eps)
-TC_HDL = TC / (HDL + eps)
-LDL_HDL = LDL / (HDL + eps)
-TG_HDL = Triglyceride / (HDL + eps)
-AIP = np.log10((Triglyceride + eps) / (HDL + eps))
-De_Ritis = AST / (ALT + eps)
+# ======================================================
+# INPUT KOMPOSISI TUBUH (TAMBAHAN OPSI A)
+# ======================================================
+st.subheader("Komposisi Tubuh (Opsional)")
 
-col4, col5 = st.columns(2)
+c3, c4 = st.columns(2)
+with c3:
+    LeanMass = st.number_input("Lean Mass (LM) (%)", min_value=0.0, max_value=100.0, value=None)
+    TBFR = st.number_input("Total Body Fat Ratio (TBFR) (%)", min_value=0.0, max_value=100.0, value=None)
 
-with col4:
-    st.text_input("Body Mass Index (BMI)", f"{BMI:.2f}", disabled=True)
-    st.text_input("TC/HDL Ratio", f"{TC_HDL:.2f}", disabled=True)
-    st.text_input("LDL/HDL Ratio", f"{LDL_HDL:.2f}", disabled=True)
-    st.text_input("Triglyceride/HDL Ratio", f"{TG_HDL:.2f}", disabled=True)
+with c4:
+    TBW = st.number_input("Total Body Water (TBW)", min_value=0.0, max_value=100.0, value=None)
 
-with col5:
-    st.text_input("Atherogenic Index", f"{AIP:.2f}", disabled=True)
-    st.text_input("De Ritis Ratio", f"{De_Ritis:.2f}", disabled=True)
+# ======================================================
+# HITUNG FITUR TURUNAN & AGREGAT
+# ======================================================
+eps = 1e-6
+
+BMI = (Weight / ((Height / 100) ** 2 + eps)) if Weight and Height else np.nan
+TC_HDL = (TC / (HDL + eps)) if TC and HDL else np.nan
+LDL_HDL = (LDL / (HDL + eps)) if LDL and HDL else np.nan
+TG_HDL = (Triglyceride / (HDL + eps)) if Triglyceride and HDL else np.nan
+AIP = np.log10((Triglyceride + eps) / (HDL + eps)) if Triglyceride and HDL else np.nan
+DeRitis = (AST / (ALT + eps)) if AST and ALT else np.nan
+
+NLM = (Weight * (1 - LeanMass / 100)) if Weight and LeanMass else np.nan
+BF_Water = (TBFR / (TBW + eps)) if TBFR and TBW else np.nan
+
+Comorbidity = sum([
+    int(DM), int(CAD), int(Hyperlipidemia), int(Hypothyroidism)
+])
+
+# ======================================================
+# TAMPILKAN FITUR TURUNAN (READ-ONLY)
+# ======================================================
+st.subheader("Fitur Turunan & Agregat (Otomatis)")
+
+d1, d2, d3 = st.columns(3)
+
+with d1:
+    st.text_input("Body Mass Index (BMI)", "" if np.isnan(BMI) else f"{BMI:.2f}", disabled=True)
+    st.text_input("TC/HDL Ratio", "" if np.isnan(TC_HDL) else f"{TC_HDL:.2f}", disabled=True)
+    st.text_input("LDL/HDL Ratio", "" if np.isnan(LDL_HDL) else f"{LDL_HDL:.2f}", disabled=True)
+
+with d2:
+    st.text_input("Triglyceride/HDL Ratio", "" if np.isnan(TG_HDL) else f"{TG_HDL:.2f}", disabled=True)
+    st.text_input("Atherogenic Index", "" if np.isnan(AIP) else f"{AIP:.2f}", disabled=True)
+    st.text_input("De Ritis Ratio", "" if np.isnan(DeRitis) else f"{DeRitis:.2f}", disabled=True)
+
+with d3:
+    st.text_input("Non-Lean Mass (NLM)", "" if np.isnan(NLM) else f"{NLM:.2f}", disabled=True)
+    st.text_input("Body Fat/Water Ratio", "" if np.isnan(BF_Water) else f"{BF_Water:.2f}", disabled=True)
+    st.text_input("Comorbidity Score", f"{Comorbidity}", disabled=True)
 
 # ======================================================
 # PREDIKSI
 # ======================================================
 if st.button("Prediksi"):
-    # --------------------------------------------
-    # 1. Gabungkan fitur primer + turunan
-    # --------------------------------------------
     input_data = {
         "Age": Age,
-        "Gender": 1 if Gender == "Male" else 0,
+        "Gender": 1 if Gender == "Male" else 0 if Gender == "Female" else np.nan,
         "Height": Height,
         "Weight": Weight,
         "Glucose": Glucose,
@@ -134,38 +169,43 @@ if st.button("Prediksi"):
         "Triglyceride": Triglyceride,
         "Total Cholesterol (TC)": TC,
         "Hemoglobin (HGB)": HGB,
+        "Diabetes Mellitus (DM)": int(DM),
+        "Coronary Artery Disease (CAD)": int(CAD),
+        "Hyperlipidemia": int(Hyperlipidemia),
+        "Hypothyroidism": int(Hypothyroidism),
+        "Lean Mass (LM) (%)": LeanMass,
+        "Total Body Fat Ratio (TBFR) (%)": TBFR,
+        "Total Body Water (TBW)": TBW,
         "Body Mass Index (BMI)": BMI,
         "TC/HDL Ratio": TC_HDL,
         "LDL/HDL Ratio": LDL_HDL,
-        "Triglyceride/HDL Ratio": TG_HDL,
         "Atherogenic Index": AIP,
-        "De Ritis Ratio": De_Ritis,
+        "Triglyceride/HDL Ratio": TG_HDL,
+        "Non-Lean Mass (NLM)": NLM,
+        "Body Fat/Water Ratio": BF_Water,
+        "De Ritis Ratio": DeRitis,
+        "Comorbidity": Comorbidity,
     }
 
     input_df = pd.DataFrame([input_data])
 
-    # --------------------------------------------
-    # 2. Lengkapi ke 30 fitur (missing → NaN)
-    # --------------------------------------------
     for col in feature_names:
         if col not in input_df.columns:
             input_df[col] = np.nan
 
-    # Urutan kolom harus sama
     input_df = input_df[feature_names]
 
-    # --------------------------------------------
-    # 3. KNN Imputation → Scaling → Predict
-    # --------------------------------------------
     X_imputed = imputer.transform(input_df)
     X_scaled = scaler.transform(X_imputed)
     prob = model.predict(X_scaled)[0][0]
 
-    # ==================================================
-    # OUTPUT
-    # ==================================================
     st.subheader("Hasil Prediksi")
     st.metric("Probabilitas Gallstone", f"{prob:.3f}")
+
+    if prob >= 0.5:
+        st.markdown("### 🩺 Status Kesehatan: **Gallstone**")
+    else:
+        st.markdown("### 🟢 Status Kesehatan: **Healthy**")
 
     if prob < 0.3:
         st.success("Risiko Rendah")
@@ -179,11 +219,3 @@ if st.button("Prediksi"):
 # ======================================================
 st.sidebar.header("Informasi Model")
 st.sidebar.json(best_params)
-
-st.sidebar.info(
-    "Catatan:\n"
-    "- Model ANN menggunakan 30 fitur\n"
-    "- Fitur turunan dihitung otomatis oleh sistem\n"
-    "- Fitur kosong diimputasi menggunakan KNN\n"
-    "- Tidak ada retraining saat inferensi"
-)
