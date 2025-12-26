@@ -1,0 +1,9 @@
+{
+    "ann__units2": 32,
+    "ann__units1": 64,
+    "ann__lr": 0.005,
+    "ann__epochs": 30,
+    "ann__dropout2": 0.3,
+    "ann__dropout1": 0.2,
+    "ann__batch_size": 16
+}
